@@ -344,10 +344,16 @@ func _terrain_height(x: float, z: float) -> float:
 		if d < best_d:
 			best_d = d
 			best_h = p.y
-	var base := _terrain_noise.get_noise_2d(x, z) * 5.0
-	var t := clampf((best_d - road_width * 0.5 - 8.0) / 30.0, 0.0, 1.0)
+	var edge := road_width * 0.5
+	# El terreno sigue la altura de la pista y solo se ondula lejos de ella.
+	var t := clampf((best_d - edge) / 55.0, 0.0, 1.0)
 	t = t * t * (3.0 - 2.0 * t)
-	return lerpf(best_h - 1.0, base, t)
+	var n := _terrain_noise.get_noise_2d(x, z)
+	var h := best_h - 0.4 + n * 7.0 * t
+	# Terraplenes/cerros laterales que sostienen visualmente el camino.
+	var b := sin(clampf((best_d - edge) / 22.0, 0.0, 1.0) * PI)
+	h += b * 2.0 * (1.0 - t)
+	return h
 
 
 func _build_base_floor() -> void:
