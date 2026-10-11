@@ -314,11 +314,17 @@ func _build_terrain() -> void:
 			var p10: Vector3 = grid[iz][ix + 1]
 			var p01: Vector3 = grid[iz + 1][ix]
 			var p11: Vector3 = grid[iz + 1][ix + 1]
+			st.set_uv(Vector2(p00.x, p00.z) * 0.12)
 			st.add_vertex(p00)
+			st.set_uv(Vector2(p01.x, p01.z) * 0.12)
 			st.add_vertex(p01)
+			st.set_uv(Vector2(p11.x, p11.z) * 0.12)
 			st.add_vertex(p11)
+			st.set_uv(Vector2(p00.x, p00.z) * 0.12)
 			st.add_vertex(p00)
+			st.set_uv(Vector2(p11.x, p11.z) * 0.12)
 			st.add_vertex(p11)
+			st.set_uv(Vector2(p10.x, p10.z) * 0.12)
 			st.add_vertex(p10)
 	st.generate_normals()
 	var mi := MeshInstance3D.new()
@@ -379,20 +385,10 @@ func _build_base_floor() -> void:
 
 
 func _make_terrain_material() -> StandardMaterial3D:
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = 0.05
-	noise.fractal_octaves = 4
-	var albedo := NoiseTexture2D.new()
-	albedo.noise = noise
-	albedo.width = 256
-	albedo.height = 256
-	albedo.seamless = true
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.5, 0.22, 1)
-	mat.albedo_texture = albedo
+	mat.albedo_texture = load("res://textures/aerial_grass_rock_diff.jpg")
+	mat.albedo_color = Color(0.85, 0.95, 0.8)
 	mat.roughness = 1.0
-	mat.uv1_scale = Vector3(40, 40, 1)
 	return mat
 
 
@@ -420,35 +416,15 @@ func _build_barriers() -> void:
 
 
 func _make_road_material() -> StandardMaterial3D:
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = 0.03
-	noise.fractal_octaves = 5
-	noise.fractal_gain = 0.5
-
-	var albedo := NoiseTexture2D.new()
-	albedo.noise = noise
-	albedo.width = 256
-	albedo.height = 256
-	albedo.seamless = true
-
-	var nrm := NoiseTexture2D.new()
-	nrm.noise = noise
-	nrm.width = 256
-	nrm.height = 256
-	nrm.seamless = true
-	nrm.as_normal_map = true
-	nrm.bump_strength = 3.0
-
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.52, 0.4, 0.26)
-	mat.albedo_texture = albedo
-	mat.normal_enabled = true
-	mat.normal_texture = nrm
-	mat.normal_scale = 1.4
+	mat.albedo_texture = load("res://textures/brown_mud_leaves_01_diff.jpg")
+	mat.albedo_color = Color(0.95, 0.9, 0.85)
 	mat.roughness = 1.0
-	mat.metallic = 0.0
-	mat.uv1_scale = Vector3(6, 6, 1)
+	mat.roughness_texture = load("res://textures/brown_mud_leaves_01_rough.jpg")
+	mat.normal_enabled = true
+	mat.normal_texture = load("res://textures/brown_mud_leaves_01_nor_gl.jpg")
+	mat.normal_scale = 1.0
+	mat.uv1_scale = Vector3(2.0, 0.2, 1.0)
 	mat.vertex_color_use_as_albedo = true
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat
