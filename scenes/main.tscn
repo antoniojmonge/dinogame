@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/dino.tscn" id="1_dino"]
-[ext_resource type="Script" path="res://scripts/track.gd" id="2_track"]
+[ext_resource type="Script" uid="uid://dgum6ngelkvgl" path="res://scripts/track.gd" id="2_track"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.3, 0.5, 0.9, 1)

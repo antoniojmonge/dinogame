@@ -1,18 +1,22 @@
 extends Node3D
 
 ## Genera una pista cerrada en forma de cinta siguiendo una curva suave,
-## con bordillos, colision, vegetacion y rocas.
+## con bordillos, marcas de carril, colision, obstaculos y decoracion.
 
 @export var road_width := 11.0
 @export var road_thickness := 1.0
 @export var curb_width := 1.0
+@export var lane_width := 0.35
 @export var samples := 480
 @export var build_scenery := true
+@export var build_obstacles := true
+@export var obstacle_count := 14
 @export var tree_count := 260
 @export var rock_count := 80
 
 const ROAD_COLOR := Color(0.15, 0.15, 0.17)
 const CURB_COLOR := Color(0.9, 0.9, 0.92)
+const LANE_COLOR := Color(0.85, 0.75, 0.2)
 
 var _curve: Curve3D
 
@@ -20,6 +24,8 @@ var _curve: Curve3D
 func _ready() -> void:
 	_curve = _make_curve(_control_points())
 	_build_road()
+	if build_obstacles:
+		_build_obstacles()
 	if build_scenery:
 		_build_scenery()
 
@@ -54,8 +60,18 @@ func _build_road() -> void:
 	var total := _curve.get_baked_length()
 	var half := road_width * 0.5
 	var cw := curb_width
-	var cols := [-half, -half + cw, half - cw, half]
-	var colors := [CURB_COLOR, ROAD_COLOR, ROAD_COLOR, CURB_COLOR]
+	var lw := lane_width
+
+	# Limites de cada franja de la seccion transversal
+	var xs := [-half, -half + cw, -lw, lw, half - cw, half]
+	# Color (izquierda, derecha) de cada franja
+	var qcolors := [
+		[CURB_COLOR, ROAD_COLOR],
+		[ROAD_COLOR, ROAD_COLOR],
+		[LANE_COLOR, LANE_COLOR],
+		[ROAD_COLOR, ROAD_COLOR],
+		[ROAD_COLOR, CURB_COLOR],
+	]
 
 	var rings := []
 	var ups := []
@@ -65,8 +81,8 @@ func _build_road() -> void:
 		var right := xf.basis.x.normalized()
 		var up := xf.basis.y.normalized()
 		var ring := []
-		for k in 4:
-			ring.append(xf.origin + right * cols[k])
+		for k in xs.size():
+			ring.append(xf.origin + right * xs[k])
 		rings.append(ring)
 		ups.append(up)
 
@@ -77,30 +93,32 @@ func _build_road() -> void:
 		var b: Array = rings[(i + 1) % samples]
 		var ua: Vector3 = ups[i]
 		var ub: Vector3 = ups[(i + 1) % samples]
-		for k in 3:
+		for k in qcolors.size():
+			var cl: Color = qcolors[k][0]
+			var cr: Color = qcolors[k][1]
 			st.set_normal(ua)
-			st.set_color(colors[k])
+			st.set_color(cl)
 			st.set_uv(Vector2(0, 0))
 			st.add_vertex(a[k])
 			st.set_normal(ua)
-			st.set_color(colors[k + 1])
+			st.set_color(cr)
 			st.set_uv(Vector2(1, 0))
 			st.add_vertex(a[k + 1])
 			st.set_normal(ub)
-			st.set_color(colors[k + 1])
+			st.set_color(cr)
 			st.set_uv(Vector2(1, 1))
 			st.add_vertex(b[k + 1])
 
 			st.set_normal(ua)
-			st.set_color(colors[k])
+			st.set_color(cl)
 			st.set_uv(Vector2(0, 0))
 			st.add_vertex(a[k])
 			st.set_normal(ub)
-			st.set_color(colors[k + 1])
+			st.set_color(cr)
 			st.set_uv(Vector2(1, 1))
 			st.add_vertex(b[k + 1])
 			st.set_normal(ub)
-			st.set_color(colors[k])
+			st.set_color(cl)
 			st.set_uv(Vector2(0, 1))
 			st.add_vertex(b[k])
 
@@ -123,6 +141,25 @@ func _build_road() -> void:
 					cshape.shape.backface_collision = true
 
 
+func _build_obstacles() -> void:
+	var scene: PackedScene = load("res://scenes/obstacle.tscn")
+	if scene == null:
+		return
+	var total := _curve.get_baked_length()
+	for i in obstacle_count:
+		var t := float(i + 1) / float(obstacle_count + 1)
+		var off := t * total
+		var xf := _curve.sample_baked_with_rotation(off, true, true)
+		var right := xf.basis.x.normalized()
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var pos := xf.origin + right * side * (road_width * 0.26)
+		var obs: Node3D = scene.instantiate()
+		add_child(obs)
+		obs.scale = Vector3(0.7, 0.7, 0.7)
+		obs.global_position = pos + Vector3(0, 0.7, 0)
+		obs.rotate_y(float(i) * 0.7)
+
+
 func _build_scenery() -> void:
 	var pts := []
 	var total := _curve.get_baked_length()
@@ -132,7 +169,6 @@ func _build_scenery() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 20240411
 
-	# Arboles (tronco + copa)
 	var trunk_mesh := CylinderMesh.new()
 	trunk_mesh.top_radius = 0.28
 	trunk_mesh.bottom_radius = 0.5
@@ -177,7 +213,6 @@ func _build_scenery() -> void:
 	leaf_inst.material_override = leaf_mat
 	add_child(leaf_inst)
 
-	# Rocas
 	var rock_mm := MultiMesh.new()
 	rock_mm.transform_format = MultiMesh.TRANSFORM_3D
 	var rock_mesh := SphereMesh.new()
@@ -209,11 +244,7 @@ func _scatter(rng: RandomNumberGenerator, track_pts: Array, count: int, min_dist
 	var attempts := 0
 	while out.size() < count and attempts < count * 50:
 		attempts += 1
-		var p := Vector3(
-			rng.randf_range(min_p.x, max_p.x),
-			0.0,
-			rng.randf_range(min_p.z, max_p.z)
-		)
+		var p := Vector3(rng.randf_range(min_p.x, max_p.x), 0.0, rng.randf_range(min_p.z, max_p.z))
 		if _distance_to_track(p, track_pts) < min_dist:
 			continue
 		out.append(p)
