@@ -57,3 +57,7 @@ use_item={
 [rendering]
 
 renderer/rendering_method="forward_plus"
+
+[autoload]
+
+Sfx="*res://scripts/audio.gd"

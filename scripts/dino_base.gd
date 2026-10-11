@@ -105,11 +105,13 @@ func apply_stun(duration: float) -> void:
 func apply_obstacle_hit(slowdown: float, bounce: float) -> void:
 	if _shield_time > 0.0:
 		return
+	Sfx.play("hit")
 	speed = maxf(0.0, speed * slowdown)
 	_vertical = maxf(_vertical, bounce)
 
 
 func apply_power(power: String) -> void:
+	Sfx.play("pickup")
 	match power:
 		"turbo":
 			_boost_mult = 1.8
@@ -139,6 +141,7 @@ func _physics_process(delta: float) -> void:
 	if _ability_cd <= 0.0 and _stun_time <= 0.0 and _get_ability():
 		activate_ability()
 		_ability_cd = ability_cooldown
+		Sfx.play("ability")
 	if _get_use_item():
 		use_held_power()
 
@@ -175,6 +178,7 @@ func _physics_process(delta: float) -> void:
 
 	if on_floor and _stun_time <= 0.0 and _get_jump():
 		_vertical = jump_velocity
+		Sfx.play("jump")
 	elif on_floor:
 		_vertical = -2.0
 	else:
@@ -209,6 +213,7 @@ func use_held_power() -> void:
 
 
 func _spawn_projectile() -> void:
+	Sfx.play("shoot")
 	var scene: PackedScene = load("res://scenes/projectile.tscn")
 	if scene == null:
 		return
@@ -300,6 +305,7 @@ func _release_drift() -> void:
 	if _drift_level > 0 and _drift_level <= boost_multipliers.size():
 		_boost_mult = boost_multipliers[_drift_level - 1]
 		_boost_timer = boost_duration
+		Sfx.play("boost")
 	_drift_charge = 0.0
 	_drift_level = 0
 
@@ -345,6 +351,7 @@ func _update_visuals() -> void:
 		m.emission_energy_multiplier = energy
 	if smoke != null:
 		smoke.emitting = _drifting
+	Sfx.set_drift(_drifting)
 
 
 func _flash_ability(col: Color, duration := 0.5) -> void:

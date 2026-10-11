@@ -88,6 +88,7 @@ func _draw_hud() -> void:
 
 func _finish_race() -> void:
 	_finished = true
+	Sfx.play("finish")
 	var st := _standings()
 	var txt := "CARRERA TERMINADA\n\n"
 	for i in st.size():
@@ -106,6 +107,7 @@ func _on_crossed() -> void:
 		_lap = 1
 		_lap_start = _now()
 		return
+	Sfx.play("lap")
 	var t := _now() - _lap_start
 	if _best < 0.0 or t < _best:
 		_best = t
