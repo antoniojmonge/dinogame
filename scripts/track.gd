@@ -55,6 +55,10 @@ func path_points() -> PackedVector3Array:
 	return _path
 
 
+func half_width() -> float:
+	return road_width * 0.5
+
+
 func _build_rivals() -> void:
 	var scene: PackedScene = load("res://scenes/rival.tscn")
 	if scene == null:

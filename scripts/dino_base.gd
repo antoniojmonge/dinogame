@@ -42,6 +42,9 @@ var speed := 0.0
 var up_dir := Vector3.UP
 var held_power := ""
 
+var _track_path := PackedVector3Array()
+var _edge_limit := 4.5
+
 var _vertical := 0.0
 var _air_time := 0.0
 var _stun_time := 0.0
@@ -67,6 +70,10 @@ func _ready() -> void:
 	_setup_smoke()
 	up_direction = up_dir
 	floor_max_angle = deg_to_rad(85.0)
+	var track: Node = get_tree().get_first_node_in_group("track")
+	if track != null and track.has_method("path_points"):
+		_track_path = track.path_points()
+		_edge_limit = track.half_width() - 1.0
 
 
 func _setup_smoke() -> void:
@@ -125,6 +132,33 @@ func _get_use_item() -> bool:
 
 func apply_stun(duration: float) -> void:
 	_stun_time = maxf(_stun_time, duration)
+
+
+func _edge_push() -> Vector3:
+	if _track_path.is_empty():
+		return Vector3.ZERO
+	var idx := 0
+	var best := INF
+	for i in _track_path.size():
+		var d := _track_path[i].distance_squared_to(global_position)
+		if d < best:
+			best = d
+			idx = i
+	var center: Vector3 = _track_path[idx]
+	var nxt: Vector3 = _track_path[(idx + 1) % _track_path.size()]
+	var tangent := nxt - center
+	tangent.y = 0.0
+	if tangent.length_squared() < 0.001:
+		return Vector3.ZERO
+	tangent = tangent.normalized()
+	var right := tangent.cross(Vector3.UP).normalized()
+	var to_dino := global_position - center
+	to_dino.y = 0.0
+	var offset := to_dino.dot(right)
+	if absf(offset) <= _edge_limit:
+		return Vector3.ZERO
+	var push := clampf((absf(offset) - _edge_limit) * 1.5, 0.0, 12.0)
+	return -right * signf(offset) * push
 
 
 func apply_obstacle_hit(slowdown: float, bounce: float) -> void:
@@ -214,6 +248,7 @@ func _physics_process(delta: float) -> void:
 		target_speed = 0.0
 	speed = move_toward(speed, target_speed, acceleration * delta)
 	velocity = fwd * speed + Vector3.UP * _vertical
+	velocity += _edge_push()
 
 	move_and_slide()
 
