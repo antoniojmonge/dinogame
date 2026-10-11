@@ -3,6 +3,7 @@ extends Node
 ## Gestiona el cronometro de vueltas y actualiza el HUD.
 
 var _label: Label = null
+var _player: Node = null
 var _running := false
 var _lap := 0
 var _lap_start := 0.0
@@ -12,6 +13,7 @@ var _best := -1.0
 func _ready() -> void:
 	_label = get_node_or_null("../HUD/Info")
 	await get_tree().process_frame
+	_player = get_tree().get_first_node_in_group("player")
 	var fl := get_tree().get_first_node_in_group("finish_line")
 	if fl != null and fl.has_signal("crossed"):
 		fl.crossed.connect(_on_crossed)
@@ -26,7 +28,10 @@ func _process(_delta: float) -> void:
 	var best := "--"
 	if _best >= 0.0:
 		best = "%.2f" % _best
-	_label.text = "Vuelta: %d\nTiempo: %.2f\nMejor: %s" % [_lap, cur, best]
+	var item := "-"
+	if _player != null and _player.held_power != "":
+		item = str(_player.held_power)
+	_label.text = "Vuelta: %d\nTiempo: %.2f\nMejor: %s\nItem: %s" % [_lap, cur, best, item]
 
 
 func _on_crossed() -> void:

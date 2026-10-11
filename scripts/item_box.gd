@@ -2,7 +2,7 @@ extends Area3D
 
 ## Caja de items: al tocarla da un poder aleatorio y se oculta para reaparecer.
 
-@export var powers: Array[String] = ["turbo", "shield"]
+@export var powers: Array[String] = ["turbo", "shield", "projectile", "trap"]
 @export var respawn_time := 4.0
 
 var _cooldown := 0.0
