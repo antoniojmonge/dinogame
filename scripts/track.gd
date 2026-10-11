@@ -55,11 +55,13 @@ func _build_rivals() -> void:
 	if scene == null:
 		return
 	var placements := [[1.0, -2.5], [1.0, 2.5], [3.0, 0.0]]
-	for pl in placements:
+	for i in placements.size():
+		var pl: Array = placements[i]
 		var off: float = pl[0]
 		var lat: float = pl[1]
 		var xf := _curve.sample_baked_with_rotation(off, true, true)
 		var rival: Node3D = scene.instantiate()
+		rival.name = "Rival%d" % (i + 1)
 		add_child(rival)
 		var pos := xf.origin + xf.basis.x.normalized() * lat
 		rival.global_transform = Transform3D(xf.basis.orthonormalized(), pos)

@@ -68,6 +68,16 @@ script = ExtResource("3_race")
 offset_left = 24.0
 offset_top = 18.0
 offset_right = 420.0
-offset_bottom = 150.0
+offset_bottom = 220.0
 theme_override_font_sizes/font_size = 26
 text = "Vuelta: 0"
+
+[node name="Results" type="Label" parent="HUD"]
+visible = false
+offset_left = 380.0
+offset_top = 210.0
+offset_right = 780.0
+offset_bottom = 470.0
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+text = ""

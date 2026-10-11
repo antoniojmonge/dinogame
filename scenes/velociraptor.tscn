@@ -53,3 +53,8 @@ spring_length = 6.0
 margin = 0.2
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
+
+[node name="FillLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 2.5)
+light_energy = 1.2
+omni_range = 12.0
