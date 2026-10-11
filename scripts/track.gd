@@ -29,7 +29,9 @@ func _ready() -> void:
 	add_to_group("track")
 	_curve = _make_curve(_control_points())
 	_build_path()
+	_build_terrain()
 	_build_road()
+	_build_barriers()
 	_build_finish_line()
 	if build_obstacles:
 		_build_obstacles()
@@ -236,6 +238,111 @@ func _build_item_boxes() -> void:
 		var box: Node3D = scene.instantiate()
 		add_child(box)
 		box.global_position = xf.origin + Vector3(0, 1.4, 0)
+
+
+func _build_terrain() -> void:
+	var cells := 90
+	var size := 520.0
+	var cx := 60.0
+	var cz := -50.0
+	var step := size / float(cells)
+	var noise := FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	noise.frequency = 0.012
+	noise.fractal_octaves = 4
+	var samples := _path
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var grid := []
+	for iz in cells + 1:
+		var row := []
+		for ix in cells + 1:
+			var x := cx - size * 0.5 + ix * step
+			var z := cz - size * 0.5 + iz * step
+			var h := _terrain_height(x, z, noise, samples)
+			row.append(Vector3(x, h, z))
+		grid.append(row)
+	for iz in cells:
+		for ix in cells:
+			var p00: Vector3 = grid[iz][ix]
+			var p10: Vector3 = grid[iz][ix + 1]
+			var p01: Vector3 = grid[iz + 1][ix]
+			var p11: Vector3 = grid[iz + 1][ix + 1]
+			st.add_vertex(p00)
+			st.add_vertex(p01)
+			st.add_vertex(p11)
+			st.add_vertex(p00)
+			st.add_vertex(p11)
+			st.add_vertex(p10)
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.name = "Terrain"
+	mi.mesh = st.commit()
+	mi.material_override = _make_terrain_material()
+	add_child(mi)
+	mi.create_trimesh_collision()
+	for child in mi.get_children():
+		if child is StaticBody3D:
+			child.collision_layer = 1
+			for cshape in child.get_children():
+				if cshape is CollisionShape3D and cshape.shape is ConcavePolygonShape3D:
+					cshape.shape.backface_collision = false
+
+
+func _terrain_height(x: float, z: float, noise: FastNoiseLite, samples: PackedVector3Array) -> float:
+	var best_d := INF
+	var best_h := 0.0
+	for i in samples.size():
+		var p: Vector3 = samples[i]
+		var d := Vector2(x - p.x, z - p.z).length()
+		if d < best_d:
+			best_d = d
+			best_h = p.y
+	var base := noise.get_noise_2d(x, z) * 5.0
+	var t := clampf((best_d - road_width * 0.5 - 2.0) / 22.0, 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	return lerpf(best_h - 0.3, base, t)
+
+
+func _make_terrain_material() -> StandardMaterial3D:
+	var noise := FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.05
+	noise.fractal_octaves = 4
+	var albedo := NoiseTexture2D.new()
+	albedo.noise = noise
+	albedo.width = 256
+	albedo.height = 256
+	albedo.seamless = true
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.3, 0.5, 0.22, 1)
+	mat.albedo_texture = albedo
+	mat.roughness = 1.0
+	mat.uv1_scale = Vector3(40, 40, 1)
+	return mat
+
+
+func _build_barriers() -> void:
+	var total := _curve.get_baked_length()
+	var n := 80
+	var half := road_width * 0.5
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(0.4, 3.0, 7.5)
+	var body := StaticBody3D.new()
+	body.name = "Barriers"
+	body.collision_layer = 1
+	add_child(body)
+	for i in n:
+		var off := ((float(i) + 0.5) / float(n)) * total
+		var xf := _curve.sample_baked_with_rotation(off, true, true)
+		var right := xf.basis.x.normalized()
+		for side in [-1.0, 1.0]:
+			var sf: float = side
+			var pos := xf.origin + right * sf * (half + 0.3) + Vector3.UP * 1.4
+			var cs := CollisionShape3D.new()
+			cs.shape = shape
+			cs.transform = Transform3D(xf.basis.orthonormalized(), pos)
+			body.add_child(cs)
 
 
 func _make_road_material() -> StandardMaterial3D:
