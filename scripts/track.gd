@@ -3,7 +3,7 @@ extends Node3D
 ## Genera una pista cerrada en forma de cinta siguiendo una curva suave,
 ## con bordillos, marcas de carril, colision, obstaculos y decoracion.
 
-@export var road_width := 11.0
+@export var road_width := 9.0
 @export var road_thickness := 1.0
 @export var curb_width := 1.0
 @export var lane_width := 0.35
@@ -23,6 +23,7 @@ const LANE_COLOR := Color(1.0, 0.93, 0.7)
 const LOOP_OFFSET := 14.0
 const LOOP_RADIUS := 4.5
 const LOOP_DRIFT := 28.3
+const USE_LOOP := false
 
 var _curve: Curve3D
 var _path := PackedVector3Array()
@@ -36,7 +37,8 @@ func _ready() -> void:
 	_build_base_floor()
 	_build_terrain()
 	_build_road()
-	_build_loop()
+	if USE_LOOP:
+		_build_loop()
 	_build_barriers()
 	_build_finish_line()
 	if build_obstacles:
@@ -81,18 +83,24 @@ func _build_rivals() -> void:
 
 
 func _control_points() -> Array:
-	return [
-		Vector3(0, 0, 0),
-		Vector3(0, 1.0, -60),
-		Vector3(18, 3.0, -110),
-		Vector3(60, 6.0, -140),
-		Vector3(110, 7.0, -115),
-		Vector3(130, 6.0, -65),
-		Vector3(120, 6.0, -15),
-		Vector3(85, 5.0, 30),
-		Vector3(40, 3.0, 50),
-		Vector3(0, 1.0, 45),
+	# Trazado extraido de tracks/pista_1.blend (curva NurbsPath), reorientado
+	# para que el inicio mire hacia -Z y escalado.
+	var raw := [
+		Vector3(0.0, 0.0, 0.0),
+		Vector3(0.0, 0.0, -17.99),
+		Vector3(-11.87, 0.0, -11.79),
+		Vector3(-24.46, 0.0, -9.71),
+		Vector3(-20.74, 0.0, -28.49),
+		Vector3(-39.85, 0.0, -29.54),
+		Vector3(-30.26, 0.0, -66.43),
+		Vector3(-31.53, 0.0, -63.48),
+		Vector3(-17.62, 0.0, -77.19),
+		Vector3(13.15, 0.0, -55.06),
+		Vector3(26.07, 0.0, -23.99),
+		Vector3(27.33, 0.0, 11.1),
+		Vector3(1.83, 0.0, 22.05),
 	]
+	return raw
 
 
 func _make_curve(pts: Array) -> Curve3D:
@@ -167,7 +175,7 @@ func _build_road() -> void:
 		var ua: Vector3 = ring_ups[i]
 		var ub: Vector3 = ring_ups[(i + 1) % samples]
 		var off_i := (float(i) / float(samples)) * total
-		if off_i >= LOOP_OFFSET - 0.2 and off_i <= LOOP_OFFSET + LOOP_DRIFT + 0.2:
+		if USE_LOOP and off_i >= LOOP_OFFSET - 0.2 and off_i <= LOOP_OFFSET + LOOP_DRIFT + 0.2:
 			continue
 		for k in qcolors.size():
 			var cl: Color = qcolors[k][0]

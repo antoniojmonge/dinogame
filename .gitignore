@@ -18,3 +18,6 @@ mono_crash.*.json
 # Exported builds
 /build/
 /export/
+
+# Archivos comprimidos
+*.zip
