@@ -10,7 +10,10 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		Game.quit_game()
+		if $Credits.visible:
+			_show_credits(false)
+		else:
+			Game.quit_game()
 
 
 func _update_info() -> void:
@@ -35,4 +38,9 @@ func _on_select() -> void:
 
 
 func _on_credits() -> void:
-	$Credits.visible = not $Credits.visible
+	_show_credits(not $Credits.visible)
+
+
+func _show_credits(show: bool) -> void:
+	$Credits.visible = show
+	$Center.visible = not show
