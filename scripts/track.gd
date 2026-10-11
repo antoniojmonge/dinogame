@@ -142,7 +142,7 @@ func _build_road() -> void:
 
 
 func _build_obstacles() -> void:
-	var scene: PackedScene = load("res://scenes/obstacle.tscn")
+	var scene: PackedScene = load("res://scenes/hazard.tscn")
 	if scene == null:
 		return
 	var total := _curve.get_baked_length()
@@ -155,9 +155,7 @@ func _build_obstacles() -> void:
 		var pos := xf.origin + right * side * (road_width * 0.26)
 		var obs: Node3D = scene.instantiate()
 		add_child(obs)
-		obs.scale = Vector3(0.7, 0.7, 0.7)
-		obs.global_position = pos + Vector3(0, 0.7, 0)
-		obs.rotate_y(float(i) * 0.7)
+		obs.global_position = pos
 
 
 func _build_scenery() -> void:
