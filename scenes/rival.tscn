@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/rival.gd" id="1_rival"]
+[ext_resource type="PackedScene" path="res://models/trex.glb" id="2_trex"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.9
+height = 3.4
+
+[node name="Rival" type="CharacterBody3D"]
+script = ExtResource("1_rival")
+
+[node name="Model" parent="." instance=ExtResource("2_trex")]
+transform = Transform3D(-0.1, 0, 0, 0, 0.1, 0, 0, 0, -0.1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+shape = SubResource("CapsuleShape3D_body")

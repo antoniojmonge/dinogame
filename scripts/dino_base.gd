@@ -23,11 +23,12 @@ extends CharacterBody3D
 
 @export_group("Habilidad")
 @export var ability_cooldown := 4.0
+@export var is_player := false
 
-@onready var anim: AnimationPlayer = $Model/AnimationPlayer
-@onready var camera_rig: SpringArm3D = $CameraRig
-@onready var camera: Camera3D = $CameraRig/Camera3D
-@onready var smoke: GPUParticles3D = $DriftSmoke
+@onready var anim: AnimationPlayer = get_node_or_null("Model/AnimationPlayer") as AnimationPlayer
+@onready var camera_rig: SpringArm3D = get_node_or_null("CameraRig") as SpringArm3D
+@onready var camera: Camera3D = get_node_or_null("CameraRig/Camera3D") as Camera3D
+@onready var smoke: GPUParticles3D = get_node_or_null("DriftSmoke") as GPUParticles3D
 
 const ANIM_IDLE := "Armature|TRex_Idle"
 const ANIM_WALK := "Armature|TRex_Walk"
@@ -58,8 +59,9 @@ var _dino_mats: Array[StandardMaterial3D] = []
 
 
 func _ready() -> void:
-	add_to_group("player")
 	add_to_group("dino")
+	if is_player:
+		add_to_group("player")
 	_setup_animations()
 	_apply_materials()
 	up_direction = up_dir
@@ -70,6 +72,28 @@ func _ready() -> void:
 
 func activate_ability() -> void:
 	pass
+
+
+# --- Entrada (virtual): el jugador lee teclado, la IA calcula ---
+
+func _get_steer() -> float:
+	return Input.get_axis("move_left", "move_right")
+
+
+func _get_jump() -> bool:
+	return Input.is_action_just_pressed("jump")
+
+
+func _get_drift() -> bool:
+	return Input.is_action_pressed("drift")
+
+
+func _get_ability() -> bool:
+	return Input.is_action_just_pressed("ability")
+
+
+func _get_use_item() -> bool:
+	return Input.is_action_just_pressed("use_item")
 
 
 # --- Estado externo (golpes / poderes / aturdimiento) ---
@@ -112,10 +136,10 @@ func _physics_process(delta: float) -> void:
 	if _ability_flash_time > 0.0:
 		_ability_flash_time -= delta
 
-	if _ability_cd <= 0.0 and _stun_time <= 0.0 and Input.is_action_just_pressed("ability"):
+	if _ability_cd <= 0.0 and _stun_time <= 0.0 and _get_ability():
 		activate_ability()
 		_ability_cd = ability_cooldown
-	if Input.is_action_just_pressed("use_item"):
+	if _get_use_item():
 		use_held_power()
 
 	var on_floor := is_on_floor()
@@ -127,7 +151,7 @@ func _physics_process(delta: float) -> void:
 		_air_time += delta
 	up_direction = up_dir
 
-	var turn := Input.get_axis("move_left", "move_right")
+	var turn := _get_steer()
 	if _stun_time > 0.0:
 		turn = 0.0
 
@@ -149,7 +173,7 @@ func _physics_process(delta: float) -> void:
 	var right := fwd.cross(up_dir).normalized()
 	transform.basis = Basis(right, up_dir, -fwd).orthonormalized()
 
-	if on_floor and _stun_time <= 0.0 and Input.is_action_just_pressed("jump"):
+	if on_floor and _stun_time <= 0.0 and _get_jump():
 		_vertical = jump_velocity
 	elif on_floor:
 		_vertical = -2.0
@@ -257,7 +281,7 @@ func _update_drift(delta: float, turn: float, on_floor: bool) -> void:
 		if _boost_timer <= 0.0:
 			_boost_mult = 1.0
 
-	if Input.is_action_pressed("drift") and on_floor and speed > drift_min_speed and _stun_time <= 0.0:
+	if _get_drift() and on_floor and speed > drift_min_speed and _stun_time <= 0.0:
 		if not _drifting:
 			_drifting = true
 			_drift_charge = 0.0

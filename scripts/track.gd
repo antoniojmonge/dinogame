@@ -22,17 +22,47 @@ const CURB_COLOR := Color(0.9, 0.9, 0.92)
 const LANE_COLOR := Color(0.85, 0.75, 0.2)
 
 var _curve: Curve3D
+var _path := PackedVector3Array()
 
 
 func _ready() -> void:
+	add_to_group("track")
 	_curve = _make_curve(_control_points())
+	_build_path()
 	_build_road()
 	_build_finish_line()
 	if build_obstacles:
 		_build_obstacles()
 	_build_item_boxes()
+	_build_rivals()
 	if build_scenery:
 		_build_scenery()
+
+
+func _build_path() -> void:
+	var total := _curve.get_baked_length()
+	var n := 220
+	for i in n:
+		_path.append(_curve.sample_baked((float(i) / float(n)) * total, true))
+
+
+func path_points() -> PackedVector3Array:
+	return _path
+
+
+func _build_rivals() -> void:
+	var scene: PackedScene = load("res://scenes/rival.tscn")
+	if scene == null:
+		return
+	var placements := [[1.0, -2.5], [1.0, 2.5], [3.0, 0.0]]
+	for pl in placements:
+		var off: float = pl[0]
+		var lat: float = pl[1]
+		var xf := _curve.sample_baked_with_rotation(off, true, true)
+		var rival: Node3D = scene.instantiate()
+		add_child(rival)
+		var pos := xf.origin + xf.basis.x.normalized() * lat
+		rival.global_transform = Transform3D(xf.basis.orthonormalized(), pos)
 
 
 func _control_points() -> Array:

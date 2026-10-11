@@ -29,6 +29,7 @@ material = SubResource("StandardMaterial3D_smoke")
 
 [node name="Velociraptor" type="CharacterBody3D"]
 script = ExtResource("1_raptor")
+is_player = true
 
 [node name="Model" parent="." instance=ExtResource("2_trex")]
 transform = Transform3D(-0.075, 0, 0, 0, 0.075, 0, 0, 0, -0.075, 0, 0, 0)

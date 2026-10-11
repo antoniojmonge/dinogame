@@ -22,6 +22,6 @@ func _process(delta: float) -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if _cooldown > 0.0:
 		return
-	if body.is_in_group("player") and body.has_method("apply_obstacle_hit"):
+	if body.is_in_group("dino") and body.has_method("apply_obstacle_hit"):
 		_cooldown = hit_cooldown
 		body.apply_obstacle_hit(slowdown_factor, bounce_strength)

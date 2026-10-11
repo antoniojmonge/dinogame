@@ -28,7 +28,7 @@ func _process(delta: float) -> void:
 func _on_body_entered(body: Node3D) -> void:
 	if _cooldown > 0.0:
 		return
-	if body.is_in_group("player") and body.has_method("apply_power"):
+	if body.is_in_group("dino") and body.has_method("apply_power"):
 		_cooldown = respawn_time
 		set_deferred("monitoring", false)
 		visible = false
