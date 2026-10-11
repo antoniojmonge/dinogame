@@ -29,6 +29,7 @@ func _ready() -> void:
 	add_to_group("track")
 	_curve = _make_curve(_control_points())
 	_build_path()
+	_build_base_floor()
 	_build_terrain()
 	_build_road()
 	_build_barriers()
@@ -241,8 +242,8 @@ func _build_item_boxes() -> void:
 
 
 func _build_terrain() -> void:
-	var cells := 90
-	var size := 520.0
+	var cells := 120
+	var size := 900.0
 	var cx := 60.0
 	var cz := -50.0
 	var step := size / float(cells)
@@ -299,9 +300,31 @@ func _terrain_height(x: float, z: float, noise: FastNoiseLite, samples: PackedVe
 			best_d = d
 			best_h = p.y
 	var base := noise.get_noise_2d(x, z) * 5.0
-	var t := clampf((best_d - road_width * 0.5 - 2.0) / 22.0, 0.0, 1.0)
+	var t := clampf((best_d - road_width * 0.5 - 8.0) / 30.0, 0.0, 1.0)
 	t = t * t * (3.0 - 2.0 * t)
 	return lerpf(best_h - 0.3, base, t)
+
+
+func _build_base_floor() -> void:
+	var mi := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(3000, 3000)
+	mi.mesh = pm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.28, 0.42, 0.2)
+	mi.material_override = mat
+	mi.position = Vector3(60, -6, -50)
+	add_child(mi)
+
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(3000, 2, 3000)
+	cs.shape = shape
+	body.add_child(cs)
+	body.position = Vector3(60, -7, -50)
+	add_child(body)
 
 
 func _make_terrain_material() -> StandardMaterial3D:
@@ -324,10 +347,10 @@ func _make_terrain_material() -> StandardMaterial3D:
 
 func _build_barriers() -> void:
 	var total := _curve.get_baked_length()
-	var n := 80
+	var n := 110
 	var half := road_width * 0.5
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(0.4, 3.0, 7.5)
+	shape.size = Vector3(0.6, 4.5, 8.0)
 	var body := StaticBody3D.new()
 	body.name = "Barriers"
 	body.collision_layer = 1
@@ -338,7 +361,7 @@ func _build_barriers() -> void:
 		var right := xf.basis.x.normalized()
 		for side in [-1.0, 1.0]:
 			var sf: float = side
-			var pos := xf.origin + right * sf * (half + 0.3) + Vector3.UP * 1.4
+			var pos := xf.origin + right * sf * (half + 0.2) + Vector3.UP * 2.1
 			var cs := CollisionShape3D.new()
 			cs.shape = shape
 			cs.transform = Transform3D(xf.basis.orthonormalized(), pos)

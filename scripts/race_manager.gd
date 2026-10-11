@@ -34,6 +34,7 @@ func _ready() -> void:
 	var fl := get_tree().get_first_node_in_group("finish_line")
 	if fl != null and fl.has_signal("crossed"):
 		fl.crossed.connect(_on_crossed)
+	_best = Game.best_lap
 
 
 func _process(_delta: float) -> void:
@@ -89,6 +90,8 @@ func _draw_hud() -> void:
 func _finish_race() -> void:
 	_finished = true
 	Sfx.play("finish")
+	if _best > 0.0:
+		Game.save_best(_best)
 	var st := _standings()
 	var txt := "CARRERA TERMINADA\n\n"
 	for i in st.size():

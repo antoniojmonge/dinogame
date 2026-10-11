@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/menu.gd" id="1_menu"]
+
+[node name="Menu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_menu")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.09, 0.11, 0.09, 1)
+
+[node name="Title" type="Label" parent="."]
+offset_top = 90.0
+offset_right = 1152.0
+offset_bottom = 190.0
+theme_override_font_sizes/font_size = 68
+horizontal_alignment = 1
+text = "DINO RACER"
+
+[node name="VBox" type="VBoxContainer" parent="."]
+offset_left = 466.0
+offset_top = 300.0
+offset_right = 686.0
+offset_bottom = 540.0
+theme_override_constants/separation = 18
+
+[node name="Play" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(220, 54)
+theme_override_font_sizes/font_size = 26
+text = "Jugar"
+
+[node name="Select" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(220, 54)
+theme_override_font_sizes/font_size = 22
+text = "Seleccionar dinosaurio"
+
+[node name="CreditsBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(220, 54)
+theme_override_font_sizes/font_size = 22
+text = "Creditos"
+
+[node name="Quit" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(220, 54)
+theme_override_font_sizes/font_size = 22
+text = "Salir"
+
+[node name="Info" type="Label" parent="."]
+offset_left = 300.0
+offset_top = 560.0
+offset_right = 852.0
+offset_bottom = 630.0
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+text = "Dinosaurio: T-Rex"
+
+[node name="Credits" type="Label" parent="."]
+visible = false
+offset_left = 200.0
+offset_top = 300.0
+offset_right = 952.0
+offset_bottom = 560.0
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+text = "Dino Racer
+
+Programado en Godot 4 + Blender
+Modelo T-Rex: Quaternius (CC0)
+Hecho por Antonio Monge
+
+Pulsa 'Creditos' para volver."

@@ -8,7 +8,7 @@ config_version=5
 
 config/name="Dino Racer"
 config/description="Juego de carreras de dinosaurios en 3D estilo Sonic."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -61,3 +61,4 @@ renderer/rendering_method="forward_plus"
 [autoload]
 
 Sfx="*res://scripts/audio.gd"
+Game="*res://scripts/game.gd"
