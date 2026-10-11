@@ -1,13 +1,15 @@
 extends CharacterBody3D
 
-## Controlador estilo Sonic: el dino corre solo hacia adelante,
-## el jugador gira a izquierda/derecha y salta.
+## Controlador estilo Sonic: corre solo hacia adelante, gira y salta.
+## Se alinea a la superficie (up_dir segun la normal del suelo) para
+## poder recorrer rampas peraltadas y loops verticales.
 
 @export var max_speed := 22.0
 @export var acceleration := 25.0
 @export var steering_speed := 2.4
 @export var jump_velocity := 13.0
 @export var gravity := 32.0
+@export var align_speed := 18.0
 @export var outline_enabled := true
 @export var rim_enabled := true
 
@@ -20,12 +22,16 @@ const ANIM_RUN := "Armature|TRex_Run"
 const ANIM_JUMP := "Armature|TRex_Jump"
 
 var speed := 0.0
+var up_dir := Vector3.UP
+var _vertical := 0.0
 
 
 func _ready() -> void:
 	add_to_group("player")
 	_setup_animations()
 	_apply_materials()
+	up_direction = up_dir
+	floor_max_angle = deg_to_rad(85.0)
 
 
 func _setup_animations() -> void:
@@ -70,8 +76,7 @@ func _all_meshes(n: Node) -> Array:
 
 func apply_obstacle_hit(slowdown: float, bounce: float) -> void:
 	speed = maxf(0.0, speed * slowdown)
-	if velocity.y < bounce:
-		velocity.y = bounce
+	_vertical = maxf(_vertical, bounce)
 
 
 func _physics_process(delta: float) -> void:
@@ -79,20 +84,37 @@ func _physics_process(delta: float) -> void:
 		get_tree().reload_current_scene()
 		return
 
-	if not is_on_floor():
-		velocity.y -= gravity * delta
+	var on_floor := is_on_floor()
 
-	if is_on_floor() and Input.is_action_just_pressed("jump"):
-		velocity.y = jump_velocity
-
-	speed = move_toward(speed, max_speed, acceleration * delta)
+	if on_floor:
+		up_dir = up_dir.slerp(get_floor_normal(), clampf(align_speed * delta, 0.0, 1.0)).normalized()
+	else:
+		up_dir = up_dir.slerp(Vector3.UP, clampf(1.5 * delta, 0.0, 1.0)).normalized()
+	up_direction = up_dir
 
 	var turn := Input.get_axis("move_left", "move_right")
-	rotate_y(-turn * steering_speed * delta)
+	if turn != 0.0:
+		transform.basis = (Basis(up_dir, -turn * steering_speed * delta) * transform.basis).orthonormalized()
 
-	var forward := -transform.basis.z
-	velocity.x = forward.x * speed
-	velocity.z = forward.z * speed
+	var fwd := -transform.basis.z
+	fwd = fwd - up_dir * fwd.dot(up_dir)
+	if fwd.length_squared() < 0.0001:
+		fwd = up_dir.cross(Vector3.RIGHT)
+		if fwd.length_squared() < 0.0001:
+			fwd = Vector3.FORWARD
+	fwd = fwd.normalized()
+	var right := fwd.cross(up_dir).normalized()
+	transform.basis = Basis(right, up_dir, -fwd).orthonormalized()
+
+	if on_floor and Input.is_action_just_pressed("jump"):
+		_vertical = jump_velocity
+	elif on_floor:
+		_vertical = 0.0
+	else:
+		_vertical -= gravity * delta
+
+	speed = move_toward(speed, max_speed, acceleration * delta)
+	velocity = fwd * speed + Vector3.UP * _vertical
 
 	move_and_slide()
 

@@ -11,6 +11,8 @@ extends Node3D
 @export var build_scenery := true
 @export var build_obstacles := true
 @export var obstacle_count := 14
+@export var bank_strength := 12.0
+@export var max_bank := 0.4
 @export var tree_count := 260
 @export var rock_count := 80
 
@@ -73,26 +75,49 @@ func _build_road() -> void:
 		[ROAD_COLOR, CURB_COLOR],
 	]
 
-	var rings := []
+	var origins := []
+	var rights := []
 	var ups := []
+	var headings := []
 	for i in samples:
 		var off := (float(i) / samples) * total
 		var xf := _curve.sample_baked_with_rotation(off, true, true)
-		var right := xf.basis.x.normalized()
-		var up := xf.basis.y.normalized()
+		origins.append(xf.origin)
+		rights.append(xf.basis.x.normalized())
+		ups.append(xf.basis.y.normalized())
+		var f := xf.basis.z.normalized()
+		headings.append(atan2(f.x, f.z))
+
+	var banks := []
+	for i in samples:
+		var prev: float = headings[(i - 1 + samples) % samples]
+		var nxt: float = headings[(i + 1) % samples]
+		var d := wrapf(nxt - prev, -PI, PI)
+		banks.append(clampf(d * bank_strength, -max_bank, max_bank))
+
+	var rings := []
+	var ring_ups := []
+	for i in samples:
+		var r: Vector3 = rights[i]
+		var u: Vector3 = ups[i]
+		var f: Vector3 = (origins[(i + 1) % samples] - origins[(i - 1 + samples) % samples])
+		if banks[i] != 0.0 and f.length_squared() > 0.0001:
+			var rot := Basis(f.normalized(), banks[i])
+			r = (rot * r).normalized()
+			u = (rot * u).normalized()
 		var ring := []
 		for k in xs.size():
-			ring.append(xf.origin + right * xs[k])
+			ring.append(origins[i] + r * xs[k])
 		rings.append(ring)
-		ups.append(up)
+		ring_ups.append(u)
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in samples:
 		var a: Array = rings[i]
 		var b: Array = rings[(i + 1) % samples]
-		var ua: Vector3 = ups[i]
-		var ub: Vector3 = ups[(i + 1) % samples]
+		var ua: Vector3 = ring_ups[i]
+		var ub: Vector3 = ring_ups[(i + 1) % samples]
 		for k in qcolors.size():
 			var cl: Color = qcolors[k][0]
 			var cr: Color = qcolors[k][1]
@@ -100,27 +125,27 @@ func _build_road() -> void:
 			st.set_color(cl)
 			st.set_uv(Vector2(0, 0))
 			st.add_vertex(a[k])
-			st.set_normal(ua)
-			st.set_color(cr)
-			st.set_uv(Vector2(1, 0))
-			st.add_vertex(a[k + 1])
 			st.set_normal(ub)
 			st.set_color(cr)
 			st.set_uv(Vector2(1, 1))
 			st.add_vertex(b[k + 1])
+			st.set_normal(ua)
+			st.set_color(cr)
+			st.set_uv(Vector2(1, 0))
+			st.add_vertex(a[k + 1])
 
 			st.set_normal(ua)
 			st.set_color(cl)
 			st.set_uv(Vector2(0, 0))
 			st.add_vertex(a[k])
 			st.set_normal(ub)
-			st.set_color(cr)
-			st.set_uv(Vector2(1, 1))
-			st.add_vertex(b[k + 1])
-			st.set_normal(ub)
 			st.set_color(cl)
 			st.set_uv(Vector2(0, 1))
 			st.add_vertex(b[k])
+			st.set_normal(ub)
+			st.set_color(cr)
+			st.set_uv(Vector2(1, 1))
+			st.add_vertex(b[k + 1])
 
 	var mesh := st.commit()
 	var mi := MeshInstance3D.new()
@@ -138,7 +163,7 @@ func _build_road() -> void:
 			child.collision_layer = 1
 			for cshape in child.get_children():
 				if cshape is CollisionShape3D and cshape.shape is ConcavePolygonShape3D:
-					cshape.shape.backface_collision = true
+					cshape.shape.backface_collision = false
 
 
 func _build_obstacles() -> void:
