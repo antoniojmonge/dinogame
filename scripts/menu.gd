@@ -1,18 +1,23 @@
 extends Control
 
 func _ready() -> void:
-	$VBox/Play.pressed.connect(_on_play)
-	$VBox/Select.pressed.connect(_on_select)
-	$VBox/CreditsBtn.pressed.connect(_on_credits)
-	$VBox/Quit.pressed.connect(_on_quit)
+	$Center/VBox/Play.pressed.connect(_on_play)
+	$Center/VBox/Select.pressed.connect(_on_select)
+	$Center/VBox/CreditsBtn.pressed.connect(_on_credits)
+	$Center/VBox/Quit.pressed.connect(Game.quit_game)
 	_update_info()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		Game.quit_game()
 
 
 func _update_info() -> void:
 	var best := "--"
 	if Game.best_lap > 0.0:
 		best = "%.2f s" % Game.best_lap
-	$Info.text = "Dinosaurio: %s\nMejor vuelta: %s" % [_dino_name(), best]
+	$Center/VBox/Info.text = "Dinosaurio: %s\nMejor vuelta: %s" % [_dino_name(), best]
 
 
 func _dino_name() -> String:
@@ -31,7 +36,3 @@ func _on_select() -> void:
 
 func _on_credits() -> void:
 	$Credits.visible = not $Credits.visible
-
-
-func _on_quit() -> void:
-	get_tree().quit()

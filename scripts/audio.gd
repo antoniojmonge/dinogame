@@ -12,6 +12,7 @@ var _drift: AudioStreamPlayer
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_sfx()
 	_music = AudioStreamPlayer.new()
 	_music.stream = _make_music()
