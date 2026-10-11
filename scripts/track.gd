@@ -3,15 +3,15 @@ extends Node3D
 ## Genera una pista cerrada en forma de cinta siguiendo una curva suave,
 ## con bordillos, marcas de carril, colision, obstaculos y decoracion.
 
-@export var road_width := 9.0
+@export var road_width := 7.0
 @export var road_thickness := 1.0
-@export var curb_width := 1.0
-@export var lane_width := 0.35
+@export var curb_width := 0.7
+@export var lane_width := 0.3
 @export var samples := 480
 @export var build_scenery := true
 @export var build_obstacles := true
-@export var obstacle_count := 14
-@export var item_box_count := 8
+@export var obstacle_count := 9
+@export var item_box_count := 5
 @export var bank_strength := 12.0
 @export var max_bank := 0.4
 @export var tree_count := 260
@@ -83,24 +83,70 @@ func _build_rivals() -> void:
 
 
 func _control_points() -> Array:
-	# Trazado extraido de tracks/pista_1.blend (curva NurbsPath), reorientado
-	# para que el inicio mire hacia -Z y escalado.
-	var raw := [
-		Vector3(0.0, 0.0, 0.0),
-		Vector3(0.0, 0.0, -17.99),
-		Vector3(-11.87, 0.0, -11.79),
-		Vector3(-24.46, 0.0, -9.71),
-		Vector3(-20.74, 0.0, -28.49),
-		Vector3(-39.85, 0.0, -29.54),
-		Vector3(-30.26, 0.0, -66.43),
-		Vector3(-31.53, 0.0, -63.48),
-		Vector3(-17.62, 0.0, -77.19),
-		Vector3(13.15, 0.0, -55.06),
-		Vector3(26.07, 0.0, -23.99),
-		Vector3(27.33, 0.0, 11.1),
-		Vector3(1.83, 0.0, 22.05),
+	# Circuito muestreado de la curva NurbsPath de tracks/pista_1.blend
+	# (reorientado para que el inicio mire a -Z y escalado).
+	return [
+		Vector3(0.00, 0.0, -0.00),
+		Vector3(0.00, 0.0, -8.92),
+		Vector3(-1.75, 0.0, -13.19),
+		Vector3(-4.50, 0.0, -14.62),
+		Vector3(-7.64, 0.0, -14.62),
+		Vector3(-10.73, 0.0, -14.20),
+		Vector3(-13.48, 0.0, -13.97),
+		Vector3(-15.77, 0.0, -14.19),
+		Vector3(-17.56, 0.0, -14.86),
+		Vector3(-18.86, 0.0, -15.99),
+		Vector3(-19.74, 0.0, -17.51),
+		Vector3(-20.31, 0.0, -19.34),
+		Vector3(-20.71, 0.0, -21.38),
+		Vector3(-21.14, 0.0, -23.47),
+		Vector3(-21.77, 0.0, -25.49),
+		Vector3(-22.69, 0.0, -27.38),
+		Vector3(-23.93, 0.0, -29.13),
+		Vector3(-25.41, 0.0, -30.82),
+		Vector3(-27.01, 0.0, -32.55),
+		Vector3(-28.50, 0.0, -34.53),
+		Vector3(-29.67, 0.0, -36.93),
+		Vector3(-30.38, 0.0, -39.82),
+		Vector3(-30.56, 0.0, -43.20),
+		Vector3(-30.23, 0.0, -46.96),
+		Vector3(-29.49, 0.0, -50.93),
+		Vector3(-28.52, 0.0, -54.82),
+		Vector3(-27.48, 0.0, -58.35),
+		Vector3(-26.50, 0.0, -61.35),
+		Vector3(-25.66, 0.0, -63.71),
+		Vector3(-24.96, 0.0, -65.45),
+		Vector3(-24.34, 0.0, -66.68),
+		Vector3(-23.69, 0.0, -67.57),
+		Vector3(-22.88, 0.0, -68.35),
+		Vector3(-21.80, 0.0, -69.12),
+		Vector3(-20.39, 0.0, -69.94),
+		Vector3(-18.58, 0.0, -70.76),
+		Vector3(-16.36, 0.0, -71.47),
+		Vector3(-13.72, 0.0, -71.87),
+		Vector3(-10.69, 0.0, -71.76),
+		Vector3(-7.32, 0.0, -70.98),
+		Vector3(-3.69, 0.0, -69.46),
+		Vector3(0.12, 0.0, -67.18),
+		Vector3(3.99, 0.0, -64.17),
+		Vector3(7.79, 0.0, -60.56),
+		Vector3(11.38, 0.0, -56.44),
+		Vector3(14.66, 0.0, -51.93),
+		Vector3(17.56, 0.0, -47.08),
+		Vector3(20.03, 0.0, -41.94),
+		Vector3(22.06, 0.0, -36.52),
+		Vector3(23.65, 0.0, -30.80),
+		Vector3(24.80, 0.0, -24.77),
+		Vector3(25.45, 0.0, -18.48),
+		Vector3(25.52, 0.0, -12.02),
+		Vector3(24.83, 0.0, -5.54),
+		Vector3(23.19, 0.0, 0.76),
+		Vector3(20.34, 0.0, 6.63),
+		Vector3(16.22, 0.0, 11.58),
+		Vector3(11.17, 0.0, 14.78),
+		Vector3(5.94, 0.0, 15.03),
+		Vector3(1.68, 0.0, 10.73),
 	]
-	return raw
 
 
 func _make_curve(pts: Array) -> Curve3D:
