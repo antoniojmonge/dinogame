@@ -24,6 +24,7 @@ const ANIM_JUMP := "Armature|TRex_Jump"
 var speed := 0.0
 var up_dir := Vector3.UP
 var _vertical := 0.0
+var _air_time := 0.0
 
 
 func _ready() -> void:
@@ -88,8 +89,10 @@ func _physics_process(delta: float) -> void:
 
 	if on_floor:
 		up_dir = up_dir.slerp(get_floor_normal(), clampf(align_speed * delta, 0.0, 1.0)).normalized()
+		_air_time = 0.0
 	else:
 		up_dir = up_dir.slerp(Vector3.UP, clampf(1.5 * delta, 0.0, 1.0)).normalized()
+		_air_time += delta
 	up_direction = up_dir
 
 	var turn := Input.get_axis("move_left", "move_right")
@@ -109,7 +112,7 @@ func _physics_process(delta: float) -> void:
 	if on_floor and Input.is_action_just_pressed("jump"):
 		_vertical = jump_velocity
 	elif on_floor:
-		_vertical = 0.0
+		_vertical = -2.0
 	else:
 		_vertical -= gravity * delta
 
@@ -128,7 +131,7 @@ func _physics_process(delta: float) -> void:
 func _update_animation() -> void:
 	if anim == null:
 		return
-	if not is_on_floor():
+	if _air_time > 0.12:
 		_play(ANIM_JUMP)
 	else:
 		_play(ANIM_RUN)
