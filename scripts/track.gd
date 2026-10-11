@@ -522,7 +522,7 @@ func _build_edge_decor() -> void:
 				rope_tfs.append(_rope_transform(arr[i - 1], top))
 
 	_fill_multimesh(post_mm, post_tfs)
-	_fill_multimesh(rope_mm, rope_tfs)
+	rope_mm.instance_count = 0
 	_fill_multimesh(rock_mm, rock_tfs)
 
 	var post_inst := MultiMeshInstance3D.new()
