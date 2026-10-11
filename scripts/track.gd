@@ -11,6 +11,7 @@ extends Node3D
 @export var build_scenery := true
 @export var build_obstacles := true
 @export var obstacle_count := 14
+@export var item_box_count := 8
 @export var bank_strength := 12.0
 @export var max_bank := 0.4
 @export var tree_count := 260
@@ -26,8 +27,10 @@ var _curve: Curve3D
 func _ready() -> void:
 	_curve = _make_curve(_control_points())
 	_build_road()
+	_build_finish_line()
 	if build_obstacles:
 		_build_obstacles()
+	_build_item_boxes()
 	if build_scenery:
 		_build_scenery()
 
@@ -166,6 +169,16 @@ func _build_road() -> void:
 					cshape.shape.backface_collision = false
 
 
+func _build_finish_line() -> void:
+	var scene: PackedScene = load("res://scenes/finish_line.tscn")
+	if scene == null:
+		return
+	var xf := _curve.sample_baked_with_rotation(6.0, true, true)
+	var fl: Node3D = scene.instantiate()
+	add_child(fl)
+	fl.global_transform = Transform3D(xf.basis.orthonormalized(), xf.origin)
+
+
 func _build_obstacles() -> void:
 	var scene: PackedScene = load("res://scenes/hazard.tscn")
 	if scene == null:
@@ -181,6 +194,19 @@ func _build_obstacles() -> void:
 		var obs: Node3D = scene.instantiate()
 		add_child(obs)
 		obs.global_position = pos
+
+
+func _build_item_boxes() -> void:
+	var scene: PackedScene = load("res://scenes/item_box.tscn")
+	if scene == null:
+		return
+	var total := _curve.get_baked_length()
+	for i in item_box_count:
+		var t := (float(i) + 0.5) / float(item_box_count)
+		var xf := _curve.sample_baked_with_rotation(t * total, true, true)
+		var box: Node3D = scene.instantiate()
+		add_child(box)
+		box.global_position = xf.origin + Vector3(0, 1.4, 0)
 
 
 func _build_scenery() -> void:

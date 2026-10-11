@@ -22,6 +22,7 @@ extends CharacterBody3D
 @onready var anim: AnimationPlayer = $Model/AnimationPlayer
 @onready var camera_rig: SpringArm3D = $CameraRig
 @onready var camera: Camera3D = $CameraRig/Camera3D
+@onready var smoke: GPUParticles3D = $DriftSmoke
 
 const ANIM_IDLE := "Armature|TRex_Idle"
 const ANIM_WALK := "Armature|TRex_Walk"
@@ -41,6 +42,7 @@ var _drift_charge := 0.0
 var _drift_level := 0
 var _boost_timer := 0.0
 var _boost_mult := 1.0
+var _shield_time := 0.0
 var _dino_mats: Array[StandardMaterial3D] = []
 
 
@@ -94,8 +96,19 @@ func _all_meshes(n: Node) -> Array:
 
 
 func apply_obstacle_hit(slowdown: float, bounce: float) -> void:
+	if _shield_time > 0.0:
+		return
 	speed = maxf(0.0, speed * slowdown)
 	_vertical = maxf(_vertical, bounce)
+
+
+func apply_power(power: String) -> void:
+	match power:
+		"turbo":
+			_boost_mult = 1.8
+			_boost_timer = boost_duration
+		"shield":
+			_shield_time = 5.0
 
 
 func _physics_process(delta: float) -> void:
@@ -104,6 +117,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var on_floor := is_on_floor()
+
+	if _shield_time > 0.0:
+		_shield_time -= delta
 
 	if on_floor:
 		up_dir = up_dir.slerp(get_floor_normal(), clampf(align_speed * delta, 0.0, 1.0)).normalized()
@@ -159,8 +175,7 @@ func _update_drift(delta: float, turn: float, on_floor: bool) -> void:
 		if _boost_timer <= 0.0:
 			_boost_mult = 1.0
 
-	var turning := absf(turn) > 0.15
-	if Input.is_action_pressed("drift") and on_floor and speed > drift_min_speed and turning:
+	if Input.is_action_pressed("drift") and on_floor and speed > drift_min_speed:
 		if not _drifting:
 			_drifting = true
 			_drift_charge = 0.0
@@ -212,10 +227,15 @@ func _update_drift_visual() -> void:
 	elif _boost_timer > 0.0:
 		col = Color(0.4, 0.85, 1.0)
 		energy = 1.2
+	elif _shield_time > 0.0:
+		col = Color(0.35, 1.0, 0.45)
+		energy = 1.0
 	for m in _dino_mats:
 		m.emission_enabled = energy > 0.0
 		m.emission = col
 		m.emission_energy_multiplier = energy
+	if smoke != null:
+		smoke.emitting = _drifting
 
 
 func _drift_color(level: int) -> Color:
