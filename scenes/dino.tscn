@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/dino.gd" id="1_dino"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(0.25, 0.65, 0.3, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_snout"]
+size = Vector3(0.4, 0.4, 0.6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_snout"]
+albedo_color = Color(0.9, 0.85, 0.6, 1)
+
+[node name="Dino" type="CharacterBody3D"]
+script = ExtResource("1_dino")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = SubResource("StandardMaterial3D_body")
+
+[node name="Snout" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, -0.7)
+mesh = SubResource("BoxMesh_snout")
+surface_material_override/0 = SubResource("StandardMaterial3D_snout")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 3.5, 6)
