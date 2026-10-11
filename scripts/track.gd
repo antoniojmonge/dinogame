@@ -20,6 +20,9 @@ extends Node3D
 const ROAD_COLOR := Color(1.0, 1.0, 1.0)
 const CURB_COLOR := Color(0.8, 0.72, 0.57)
 const LANE_COLOR := Color(1.0, 0.93, 0.7)
+const LOOP_OFFSET := 14.0
+const LOOP_RADIUS := 4.5
+const LOOP_DRIFT := 28.3
 
 var _curve: Curve3D
 var _path := PackedVector3Array()
@@ -33,6 +36,7 @@ func _ready() -> void:
 	_build_base_floor()
 	_build_terrain()
 	_build_road()
+	_build_loop()
 	_build_barriers()
 	_build_finish_line()
 	if build_obstacles:
@@ -162,6 +166,9 @@ func _build_road() -> void:
 		var b: Array = rings[(i + 1) % samples]
 		var ua: Vector3 = ring_ups[i]
 		var ub: Vector3 = ring_ups[(i + 1) % samples]
+		var off_i := (float(i) / float(samples)) * total
+		if off_i >= LOOP_OFFSET - 0.2 and off_i <= LOOP_OFFSET + LOOP_DRIFT + 0.2:
+			continue
 		for k in qcolors.size():
 			var cl: Color = qcolors[k][0]
 			var cr: Color = qcolors[k][1]
@@ -245,6 +252,76 @@ func _build_road() -> void:
 			for cshape in child.get_children():
 				if cshape is CollisionShape3D and cshape.shape is ConcavePolygonShape3D:
 					cshape.shape.backface_collision = false
+
+
+func _build_loop() -> void:
+	var xf := _curve.sample_baked_with_rotation(LOOP_OFFSET, true, true)
+	var P := xf.origin
+	var f := -xf.basis.z
+	f.y = 0.0
+	if f.length_squared() < 0.0001:
+		f = Vector3.FORWARD
+	f = f.normalized()
+	var u := Vector3.UP
+	var C := P + u * LOOP_RADIUS
+	var half := road_width * 0.5
+	var steps := 72
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var prev_l := Vector3.ZERO
+	var prev_r := Vector3.ZERO
+	var prev_n := Vector3.UP
+	for i in steps + 1:
+		var t := float(i) / float(steps)
+		var th := t * TAU
+		var pos := C + f * (LOOP_RADIUS * sin(th) + LOOP_DRIFT * t) + u * (-LOOP_RADIUS * cos(th))
+		var tangent := (f * (LOOP_RADIUS * cos(th) + LOOP_DRIFT / TAU) + u * (LOOP_RADIUS * sin(th))).normalized()
+		var up := (u * cos(th) - f * sin(th)).normalized()
+		var right := tangent.cross(up).normalized()
+		var l := pos - right * half
+		var r := pos + right * half
+		if i > 0:
+			var v0 := float(i - 1) / float(steps)
+			var v1 := t
+			st.set_normal(prev_n)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(0, v0 * 14.0))
+			st.add_vertex(prev_l)
+			st.set_normal(prev_n)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(1, v0 * 14.0))
+			st.add_vertex(prev_r)
+			st.set_normal(up)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(1, v1 * 14.0))
+			st.add_vertex(r)
+			st.set_normal(prev_n)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(0, v0 * 14.0))
+			st.add_vertex(prev_l)
+			st.set_normal(up)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(1, v1 * 14.0))
+			st.add_vertex(r)
+			st.set_normal(up)
+			st.set_color(ROAD_COLOR)
+			st.set_uv(Vector2(0, v1 * 14.0))
+			st.add_vertex(l)
+		prev_l = l
+		prev_r = r
+		prev_n = up
+	var mi := MeshInstance3D.new()
+	mi.name = "Loop"
+	mi.mesh = st.commit()
+	mi.material_override = _make_road_material()
+	add_child(mi)
+	mi.create_trimesh_collision()
+	for child in mi.get_children():
+		if child is StaticBody3D:
+			child.collision_layer = 1
+			for cshape in child.get_children():
+				if cshape is CollisionShape3D and cshape.shape is ConcavePolygonShape3D:
+					cshape.shape.backface_collision = true
 
 
 func _build_finish_line() -> void:
