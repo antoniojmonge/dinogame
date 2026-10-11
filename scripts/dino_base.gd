@@ -64,8 +64,33 @@ func _ready() -> void:
 		add_to_group("player")
 	_setup_animations()
 	_apply_materials()
+	_setup_smoke()
 	up_direction = up_dir
 	floor_max_angle = deg_to_rad(85.0)
+
+
+func _setup_smoke() -> void:
+	if smoke == null:
+		return
+	var mesh := smoke.draw_pass_1
+	if mesh is QuadMesh:
+		var m: Material = mesh.material
+		if m is StandardMaterial3D:
+			m.albedo_texture = _make_puff_texture()
+
+
+func _make_puff_texture() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.fill = GradientTexture2D.FILL_RADIAL
+	t.fill_from = Vector2(0.5, 0.5)
+	t.fill_to = Vector2(1.0, 0.5)
+	t.width = 64
+	t.height = 64
+	return t
 
 
 # --- Ganchos para subclases ---
@@ -350,7 +375,7 @@ func _update_visuals() -> void:
 		m.emission = col
 		m.emission_energy_multiplier = energy
 	if smoke != null:
-		smoke.emitting = _drifting
+		smoke.emitting = _drifting or _boost_timer > 0.0 or (is_on_floor() and speed > max_speed * 0.75)
 	Sfx.set_drift(_drifting)
 
 

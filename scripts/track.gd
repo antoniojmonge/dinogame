@@ -17,9 +17,9 @@ extends Node3D
 @export var tree_count := 260
 @export var rock_count := 80
 
-const ROAD_COLOR := Color(0.15, 0.15, 0.17)
-const CURB_COLOR := Color(0.9, 0.9, 0.92)
-const LANE_COLOR := Color(0.85, 0.75, 0.2)
+const ROAD_COLOR := Color(1.0, 1.0, 1.0)
+const CURB_COLOR := Color(0.8, 0.72, 0.57)
+const LANE_COLOR := Color(1.0, 0.93, 0.7)
 
 var _curve: Curve3D
 var _path := PackedVector3Array()
@@ -37,6 +37,7 @@ func _ready() -> void:
 	_build_rivals()
 	if build_scenery:
 		_build_scenery()
+	_build_edge_decor()
 
 
 func _build_path() -> void:
@@ -186,11 +187,7 @@ func _build_road() -> void:
 	var mi := MeshInstance3D.new()
 	mi.name = "Road"
 	mi.mesh = mesh
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.roughness = 0.9
-	mi.material_override = mat
+	mi.material_override = _make_road_material()
 	add_child(mi)
 	mi.create_trimesh_collision()
 	for child in mi.get_children():
@@ -239,6 +236,158 @@ func _build_item_boxes() -> void:
 		var box: Node3D = scene.instantiate()
 		add_child(box)
 		box.global_position = xf.origin + Vector3(0, 1.4, 0)
+
+
+func _make_road_material() -> StandardMaterial3D:
+	var noise := FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.03
+	noise.fractal_octaves = 5
+	noise.fractal_gain = 0.5
+
+	var albedo := NoiseTexture2D.new()
+	albedo.noise = noise
+	albedo.width = 256
+	albedo.height = 256
+	albedo.seamless = true
+
+	var nrm := NoiseTexture2D.new()
+	nrm.noise = noise
+	nrm.width = 256
+	nrm.height = 256
+	nrm.seamless = true
+	nrm.as_normal_map = true
+	nrm.bump_strength = 3.0
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.52, 0.4, 0.26)
+	mat.albedo_texture = albedo
+	mat.normal_enabled = true
+	mat.normal_texture = nrm
+	mat.normal_scale = 1.4
+	mat.roughness = 1.0
+	mat.metallic = 0.0
+	mat.uv1_scale = Vector3(6, 6, 1)
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
+
+
+func _build_edge_decor() -> void:
+	var total := _curve.get_baked_length()
+	var count := 26
+	var half := road_width * 0.5
+
+	var post_mesh := CylinderMesh.new()
+	post_mesh.top_radius = 0.14
+	post_mesh.bottom_radius = 0.17
+	post_mesh.height = 1.6
+	post_mesh.radial_segments = 6
+	var rope_mesh := CylinderMesh.new()
+	rope_mesh.top_radius = 0.05
+	rope_mesh.bottom_radius = 0.05
+	rope_mesh.height = 1.0
+	rope_mesh.radial_segments = 5
+	var rock_mesh := SphereMesh.new()
+	rock_mesh.radius = 1.0
+	rock_mesh.height = 1.7
+	rock_mesh.radial_segments = 8
+	rock_mesh.rings = 4
+
+	var post_mm := MultiMesh.new()
+	post_mm.transform_format = MultiMesh.TRANSFORM_3D
+	post_mm.mesh = post_mesh
+	var rope_mm := MultiMesh.new()
+	rope_mm.transform_format = MultiMesh.TRANSFORM_3D
+	rope_mm.mesh = rope_mesh
+	var rock_mm := MultiMesh.new()
+	rock_mm.transform_format = MultiMesh.TRANSFORM_3D
+	rock_mm.mesh = rock_mesh
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+
+	var left_tops := []
+	var right_tops := []
+	var rock_tfs := []
+	for i in count:
+		var t := (float(i) + 0.5) / float(count)
+		var xf := _curve.sample_baked_with_rotation(t * total, true, true)
+		var right := xf.basis.x.normalized()
+		for side in [-1.0, 1.0]:
+			var sf: float = side
+			var base: Vector3 = xf.origin + right * sf * (half + 0.7)
+			var top: Vector3 = base + Vector3.UP * 1.6
+			if sf < 0.0:
+				left_tops.append(top)
+			else:
+				right_tops.append(top)
+			if rng.randf() < 0.6:
+				var s := rng.randf_range(1.0, 2.4)
+				var off: float = (half + 1.9 + rng.randf_range(0.0, 2.5)) * sf
+				var rpos: Vector3 = xf.origin + right * off + Vector3(0, s * 0.45, 0)
+				rock_tfs.append(Transform3D(Basis().scaled(Vector3(s, s * 0.8, s)), rpos))
+
+	var post_tfs := []
+	var rope_tfs := []
+	for tops in [left_tops, right_tops]:
+		var arr: Array = tops
+		for i in arr.size():
+			var top: Vector3 = arr[i]
+			post_tfs.append(Transform3D(Basis(), top - Vector3(0, 0.8, 0)))
+			if i > 0:
+				rope_tfs.append(_rope_transform(arr[i - 1], top))
+
+	_fill_multimesh(post_mm, post_tfs)
+	_fill_multimesh(rope_mm, rope_tfs)
+	_fill_multimesh(rock_mm, rock_tfs)
+
+	var post_inst := MultiMeshInstance3D.new()
+	post_inst.name = "Posts"
+	post_inst.multimesh = post_mm
+	var post_mat := StandardMaterial3D.new()
+	post_mat.albedo_color = Color(0.34, 0.24, 0.14)
+	post_inst.material_override = post_mat
+	add_child(post_inst)
+
+	var rope_inst := MultiMeshInstance3D.new()
+	rope_inst.name = "Ropes"
+	rope_inst.multimesh = rope_mm
+	var rope_mat := StandardMaterial3D.new()
+	rope_mat.albedo_color = Color(0.5, 0.4, 0.26)
+	rope_inst.material_override = rope_mat
+	add_child(rope_inst)
+
+	var rock_inst := MultiMeshInstance3D.new()
+	rock_inst.name = "EdgeRocks"
+	rock_inst.multimesh = rock_mm
+	var rock_mat := StandardMaterial3D.new()
+	rock_mat.albedo_color = Color(0.46, 0.42, 0.37)
+	rock_mat.roughness = 1.0
+	rock_inst.material_override = rock_mat
+	add_child(rock_inst)
+
+
+func _fill_multimesh(mm: MultiMesh, tfs: Array) -> void:
+	mm.instance_count = tfs.size()
+	for i in tfs.size():
+		mm.set_instance_transform(i, tfs[i])
+
+
+func _rope_transform(a: Vector3, b: Vector3) -> Transform3D:
+	var mid := (a + b) * 0.5
+	var d := b - a
+	var len := d.length()
+	if len < 0.001:
+		return Transform3D()
+	var y := d / len
+	var x := Vector3.UP.cross(y)
+	if x.length() < 0.001:
+		x = Vector3.RIGHT
+	x = x.normalized()
+	var z := x.cross(y).normalized()
+	var basis := Basis(x, y, z).scaled(Vector3(1.0, len, 1.0))
+	return Transform3D(basis, mid)
 
 
 func _build_scenery() -> void:
