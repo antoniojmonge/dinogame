@@ -24,7 +24,13 @@ func _update_info() -> void:
 
 
 func _dino_name() -> String:
-	return "Velociraptor" if Game.selected_dino == "velociraptor" else "T-Rex"
+	match Game.selected_dino:
+		"velociraptor":
+			return "Velociraptor"
+		"triceratops":
+			return "Triceratops"
+		_:
+			return "T-Rex"
 
 
 func _on_play() -> void:
@@ -32,9 +38,7 @@ func _on_play() -> void:
 
 
 func _on_select() -> void:
-	Game.selected_dino = "velociraptor" if Game.selected_dino == "trex" else "trex"
-	Game.save_game()
-	_update_info()
+	get_tree().change_scene_to_file("res://scenes/select.tscn")
 
 
 func _on_credits() -> void:

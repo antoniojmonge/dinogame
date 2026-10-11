@@ -23,6 +23,7 @@ const LANE_COLOR := Color(1.0, 0.93, 0.7)
 
 var _curve: Curve3D
 var _path := PackedVector3Array()
+var _terrain_noise: FastNoiseLite
 
 
 func _ready() -> void:
@@ -186,6 +187,47 @@ func _build_road() -> void:
 			st.set_uv(Vector2(1, 1))
 			st.add_vertex(b[k + 1])
 
+	# Faldon lateral: da grosor a la pista (no flota)
+	var skirt_depth := 2.6
+	var edge_col := Color(0.34, 0.26, 0.17)
+	var edge_cols := [0, xs.size() - 1]
+	for i in samples:
+		var a: Array = rings[i]
+		var b: Array = rings[(i + 1) % samples]
+		var ua: Vector3 = ring_ups[i]
+		var ub: Vector3 = ring_ups[(i + 1) % samples]
+		var rn: Vector3 = rights[i].normalized()
+		for col in edge_cols:
+			var n: Vector3 = rn if col == xs.size() - 1 else -rn
+			var a_top: Vector3 = a[col]
+			var b_top: Vector3 = b[col]
+			var a_bot: Vector3 = a_top - ua * skirt_depth
+			var b_bot: Vector3 = b_top - ub * skirt_depth
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(0, 0))
+			st.add_vertex(a_top)
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(1, 0))
+			st.add_vertex(a_bot)
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(1, 1))
+			st.add_vertex(b_bot)
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(0, 0))
+			st.add_vertex(a_top)
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(1, 1))
+			st.add_vertex(b_bot)
+			st.set_normal(n)
+			st.set_color(edge_col)
+			st.set_uv(Vector2(0, 1))
+			st.add_vertex(b_top)
+
 	var mesh := st.commit()
 	var mi := MeshInstance3D.new()
 	mi.name = "Road"
@@ -243,15 +285,14 @@ func _build_item_boxes() -> void:
 
 func _build_terrain() -> void:
 	var cells := 120
-	var size := 900.0
+	var size := 600.0
 	var cx := 60.0
 	var cz := -50.0
 	var step := size / float(cells)
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
-	noise.frequency = 0.012
-	noise.fractal_octaves = 4
-	var samples := _path
+	_terrain_noise = FastNoiseLite.new()
+	_terrain_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	_terrain_noise.frequency = 0.012
+	_terrain_noise.fractal_octaves = 4
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var grid := []
@@ -260,7 +301,7 @@ func _build_terrain() -> void:
 		for ix in cells + 1:
 			var x := cx - size * 0.5 + ix * step
 			var z := cz - size * 0.5 + iz * step
-			var h := _terrain_height(x, z, noise, samples)
+			var h := _terrain_height(x, z)
 			row.append(Vector3(x, h, z))
 		grid.append(row)
 	for iz in cells:
@@ -290,19 +331,19 @@ func _build_terrain() -> void:
 					cshape.shape.backface_collision = false
 
 
-func _terrain_height(x: float, z: float, noise: FastNoiseLite, samples: PackedVector3Array) -> float:
+func _terrain_height(x: float, z: float) -> float:
 	var best_d := INF
 	var best_h := 0.0
-	for i in samples.size():
-		var p: Vector3 = samples[i]
+	for i in _path.size():
+		var p: Vector3 = _path[i]
 		var d := Vector2(x - p.x, z - p.z).length()
 		if d < best_d:
 			best_d = d
 			best_h = p.y
-	var base := noise.get_noise_2d(x, z) * 5.0
+	var base := _terrain_noise.get_noise_2d(x, z) * 5.0
 	var t := clampf((best_d - road_width * 0.5 - 8.0) / 30.0, 0.0, 1.0)
 	t = t * t * (3.0 - 2.0 * t)
-	return lerpf(best_h - 0.3, base, t)
+	return lerpf(best_h - 1.0, base, t)
 
 
 func _build_base_floor() -> void:
@@ -350,7 +391,7 @@ func _build_barriers() -> void:
 	var n := 110
 	var half := road_width * 0.5
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(0.6, 4.5, 8.0)
+	shape.size = Vector3(1.5, 5.0, 8.0)
 	var body := StaticBody3D.new()
 	body.name = "Barriers"
 	body.collision_layer = 1
@@ -447,6 +488,7 @@ func _build_edge_decor() -> void:
 		for side in [-1.0, 1.0]:
 			var sf: float = side
 			var base: Vector3 = xf.origin + right * sf * (half + 0.7)
+			base.y = _terrain_height(base.x, base.z)
 			var top: Vector3 = base + Vector3.UP * 1.6
 			if sf < 0.0:
 				left_tops.append(top)
@@ -455,7 +497,8 @@ func _build_edge_decor() -> void:
 			if rng.randf() < 0.6:
 				var s := rng.randf_range(1.0, 2.4)
 				var off: float = (half + 1.9 + rng.randf_range(0.0, 2.5)) * sf
-				var rpos: Vector3 = xf.origin + right * off + Vector3(0, s * 0.45, 0)
+				var rpos: Vector3 = xf.origin + right * off
+				rpos.y = _terrain_height(rpos.x, rpos.z) + s * 0.45
 				rock_tfs.append(Transform3D(Basis().scaled(Vector3(s, s * 0.8, s)), rpos))
 
 	var post_tfs := []
@@ -604,7 +647,9 @@ func _scatter(rng: RandomNumberGenerator, track_pts: Array, count: int, min_dist
 	var attempts := 0
 	while out.size() < count and attempts < count * 50:
 		attempts += 1
-		var p := Vector3(rng.randf_range(min_p.x, max_p.x), 0.0, rng.randf_range(min_p.z, max_p.z))
+		var x := rng.randf_range(min_p.x, max_p.x)
+		var z := rng.randf_range(min_p.z, max_p.z)
+		var p := Vector3(x, _terrain_height(x, z), z)
 		if _distance_to_track(p, track_pts) < min_dist:
 			continue
 		out.append(p)

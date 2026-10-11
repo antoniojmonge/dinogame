@@ -2,8 +2,14 @@ extends Node3D
 
 ## Sustituye el dinosaurio del jugador según la selección del menú.
 
+const SCENES := {
+	"velociraptor": "res://scenes/velociraptor.tscn",
+	"triceratops": "res://scenes/triceratops.tscn",
+}
+
+
 func _ready() -> void:
-	if Game.selected_dino != "velociraptor":
+	if not SCENES.has(Game.selected_dino):
 		return
 	var dino: Node3D = get_node_or_null("Dino")
 	if dino == null:
@@ -11,6 +17,6 @@ func _ready() -> void:
 	var pos: Vector3 = dino.global_position
 	var basis: Basis = dino.global_transform.basis
 	dino.queue_free()
-	var raptor: Node3D = load("res://scenes/velociraptor.tscn").instantiate()
-	add_child(raptor)
-	raptor.global_transform = Transform3D(basis, pos)
+	var chosen: Node3D = load(SCENES[Game.selected_dino]).instantiate()
+	add_child(chosen)
+	chosen.global_transform = Transform3D(basis, pos)
