@@ -21,3 +21,6 @@ mono_crash.*.json
 
 # Archivos comprimidos
 *.zip
+
+# Capturas de diagnostico
+shot*.png
