@@ -418,8 +418,18 @@ func _build_terrain() -> void:
 
 
 func _terrain_height(x: float, z: float) -> float:
-	# Terreno plano por el momento (sin colinas ni terraplenes).
-	return -0.3
+	# Plano junto a la pista y colinas suaves alrededor (natural).
+	var edge := road_width * 0.5 + 4.0
+	var best_d := INF
+	for i in _path.size():
+		var p: Vector3 = _path[i]
+		var d := Vector2(x - p.x, z - p.z).length()
+		if d < best_d:
+			best_d = d
+	var t := clampf((best_d - edge) / 45.0, 0.0, 1.0)
+	t = t * t * (3.0 - 2.0 * t)
+	var n := _terrain_noise.get_noise_2d(x, z) * 4.0
+	return -0.6 + n * t
 
 
 func _build_base_floor() -> void:
@@ -430,7 +440,7 @@ func _build_base_floor() -> void:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.28, 0.42, 0.2)
 	mi.material_override = mat
-	mi.position = Vector3(60, -6, -50)
+	mi.position = Vector3(60, -25, -50)
 	add_child(mi)
 
 	var body := StaticBody3D.new()
@@ -440,7 +450,7 @@ func _build_base_floor() -> void:
 	shape.size = Vector3(3000, 2, 3000)
 	cs.shape = shape
 	body.add_child(cs)
-	body.position = Vector3(60, -7, -50)
+	body.position = Vector3(60, -26, -50)
 	add_child(body)
 
 
