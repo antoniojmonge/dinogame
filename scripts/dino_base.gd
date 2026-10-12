@@ -35,6 +35,10 @@ const ANIM_WALK := "Armature|TRex_Walk"
 const ANIM_RUN := "Armature|TRex_Run"
 const ANIM_JUMP := "Armature|TRex_Jump"
 
+# Roles logicos; se resuelven por palabra clave y, si existen, por los nombres
+# fijos de arriba (compatibilidad con el modelo T-Rex actual).
+const ANIM_ROLES := ["idle", "walk", "run", "jump"]
+
 const CAM_BASE_LENGTH := 6.0
 const CAM_BOOST_LENGTH := 8.5
 
@@ -59,6 +63,7 @@ var _boost_timer := 0.0
 var _boost_mult := 1.0
 var _shield_time := 0.0
 var _dino_mats: Array[StandardMaterial3D] = []
+var _anim_role := {}
 
 
 func _ready() -> void:
@@ -302,10 +307,30 @@ func _spawn_trap() -> void:
 func _setup_animations() -> void:
 	if anim == null:
 		return
-	for name in [ANIM_IDLE, ANIM_WALK, ANIM_RUN]:
-		if anim.has_animation(name):
-			anim.get_animation(name).loop_mode = Animation.LOOP_LINEAR
-	_play(ANIM_RUN, true)
+	var names := []
+	for c in anim.get_animation_list():
+		names.append(String(c))
+	var prefer := {"idle": ANIM_IDLE, "walk": ANIM_WALK, "run": ANIM_RUN, "jump": ANIM_JUMP}
+	for role in ANIM_ROLES:
+		var chosen := ""
+		if names.has(prefer[role]):
+			chosen = prefer[role]
+		else:
+			for c in names:
+				if c.to_lower().find(role) != -1:
+					chosen = c
+					break
+		if chosen == "":
+			push_warning("DinoBase(%s): animacion '%s' no encontrada (clips: %s)" % [name, role, str(names)])
+		_anim_role[role] = chosen
+	for role in ["idle", "walk", "run"]:
+		var c: String = _anim_role.get(role, "")
+		if c != "" and anim.has_animation(c):
+			anim.get_animation(c).loop_mode = Animation.LOOP_LINEAR
+	# Alternativa segura si falta 'run'.
+	if _anim_role.get("run", "") == "":
+		_anim_role["run"] = _anim_role.get("walk", "") if _anim_role.get("walk", "") != "" else _anim_role.get("idle", "")
+	_play_role("run", true)
 
 
 func _apply_materials() -> void:
@@ -374,10 +399,18 @@ func _update_animation() -> void:
 	if anim == null:
 		return
 	if _air_time > 0.12:
-		_play(ANIM_JUMP)
+		_play_role("jump")
 	else:
-		_play(ANIM_RUN)
+		_play_role("run")
 		anim.speed_scale = clampf(speed / max_speed, 0.7, 1.8)
+
+
+func _play_role(role: String, force := false) -> void:
+	var clip: String = _anim_role.get(role, "")
+	if anim == null or clip == "" or not anim.has_animation(clip):
+		return
+	if force or anim.current_animation != clip:
+		anim.play(clip)
 
 
 func _update_camera(delta: float) -> void:

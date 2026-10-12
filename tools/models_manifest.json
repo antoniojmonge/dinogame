@@ -1,0 +1,39 @@
+{
+  "generated_utc": "2026-10-12T00:55:04.741561+00:00",
+  "policy": "Solo modelos con licencia CC0 declarada.",
+  "models": [
+    {
+      "species": "trex",
+      "file": "tools/models/trex.glb",
+      "url": "https://static.poly.pizza/34eed102-48f0-43dd-bc6f-ef7a6dfddfbb.glb",
+      "source_page": "https://poly.pizza/m/UYtneO5FpF",
+      "author": "Quaternius",
+      "license": "CC0",
+      "bytes": 336568,
+      "sha256": "e1c9862deef89f096c7d85dacf62aa9ce48089e5867d2bf632ed1e1733013349",
+      "status": "descargado"
+    },
+    {
+      "species": "velociraptor",
+      "file": "tools/models/velociraptor.glb",
+      "url": "https://static.poly.pizza/c1f0c4cb-c84f-415c-8323-d8cb871a2126.glb",
+      "source_page": "https://poly.pizza/m/cnlGH2UcDd",
+      "author": "Quaternius",
+      "license": "CC0",
+      "bytes": 285828,
+      "sha256": "1d9ecad0a65c0c858a216ff25f224d02b18ce86fa0ed4df8f9ecece43f3a745c",
+      "status": "descargado"
+    },
+    {
+      "species": "triceratops",
+      "file": "tools/models/triceratops.glb",
+      "url": "https://static.poly.pizza/6aa1f3ff-b9b3-4bb5-9d85-b2ffa514f0cc.glb",
+      "source_page": "https://poly.pizza/m/IGvrUqGrRM",
+      "author": "Quaternius",
+      "license": "CC0",
+      "bytes": 309684,
+      "sha256": "79ade346de5e778a58ce8c253c7e6dbd505499176a616583d1a29fa4624f498c",
+      "status": "descargado"
+    }
+  ]
+}
