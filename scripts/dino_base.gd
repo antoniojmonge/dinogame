@@ -11,7 +11,10 @@ extends CharacterBody3D
 @export var jump_velocity := 13.0
 @export var gravity := 32.0
 @export var align_speed := 18.0
-@export var outline_enabled := true
+# El outline (next_pass + grow) genera fragmentos negros inestables en el
+# modelo skinned actual. Desactivado por defecto; poner en `true` para
+# restaurar el efecto original.
+@export var outline_enabled := false
 @export var rim_enabled := true
 
 @export_group("Derrape / Turbo")
