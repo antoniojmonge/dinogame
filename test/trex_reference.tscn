@@ -1,0 +1,57 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://test/trex_reference.gd" id="1_ref"]
+[ext_resource type="PackedScene" path="res://models/trex.glb" id="2_trex"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ref"]
+sky_top_color = Color(0.35, 0.5, 0.8, 1)
+sky_horizon_color = Color(0.8, 0.85, 0.9, 1)
+
+[sub_resource type="Sky" id="Sky_ref"]
+sky_material = SubResource("ProceduralSkyMaterial_ref")
+
+[sub_resource type="Environment" id="Environment_ref"]
+background_mode = 2
+sky = SubResource("Sky_ref")
+ambient_light_source = 3
+ambient_light_energy = 1.0
+ssao_enabled = false
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ref"]
+size = Vector2(30, 30)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.3, 0.5, 0.25, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ref"]
+radius = 0.9
+height = 3.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cap"]
+albedo_color = Color(0.9, 0.3, 0.2, 0.35)
+transparency = 1
+
+[node name="TrexReference" type="Node3D"]
+script = ExtResource("1_ref")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_ref")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.3304, 0.9437, 0, -0.9437, 0.3304, 0, 10, 0)
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ref")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="Model" parent="." instance=ExtResource("2_trex")]
+transform = Transform3D(-0.1, 0, 0, 0, 0.1, 0, 0, 0, -0.1, 0, 0, 0)
+
+[node name="CollisionRef" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+mesh = SubResource("CapsuleMesh_ref")
+surface_material_override/0 = SubResource("StandardMaterial3D_cap")
+
+[node name="Camera" type="Camera3D" parent="."]
+fov = 55.0

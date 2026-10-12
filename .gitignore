@@ -24,3 +24,6 @@ mono_crash.*.json
 
 # Capturas de diagnostico
 shot*.png
+
+# Diagnostico
+diag_*.png
